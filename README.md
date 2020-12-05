@@ -192,3 +192,4 @@ The proximity detection solution has been integrated into a standalone test app 
 Ferretti, L., Wymant, C., Kendall, M., Zhao, L., Nurtay, A., Abeler-Dörner, L., Parker, M., Bonsall, D., and Fraser, C. (2020) "Quantifying SARS-CoV-2 transmission suggests epidemic control with digital contact tracing", *Science*, vol. 368, no. 6491, New York.
 
 Statcounter 2020, *Mobile Operating System Market Share*, Statcounter Global Stats, viewed August 2020, <https://gs.statcounter.com/os-market-share/mobile/worldwide>
+"# MNProject" 
