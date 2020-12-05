@@ -5,6 +5,8 @@
 package com.vmware.herald.app;
 
 import android.Manifest;
+import android.content.DialogInterface;
+import android.content.Intent;
 import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
@@ -12,14 +14,20 @@ import android.text.method.ScrollingMovementMethod;
 import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
+import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
+import com.google.zxing.integration.android.IntentIntegrator;
+import com.google.zxing.integration.android.IntentResult;
 import com.vmware.herald.sensor.Sensor;
 import com.vmware.herald.sensor.SensorArray;
 import com.vmware.herald.sensor.SensorDelegate;
@@ -68,11 +76,24 @@ public class MainActivity extends AppCompatActivity implements SensorDelegate, A
     private final SocialDistance socialMixingScore = new SocialDistance();
     private TimeInterval socialMixingScoreUnit = new TimeInterval(60);
 
+    LinearLayout scanQRButton;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+
         setContentView(R.layout.activity_main);
+
+        scanQRButton= (LinearLayout) findViewById(R.id.scanButton);
+
+        scanQRButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                scanCode();
+            }
+        });
 
         // REQUIRED : Ensure app has all required permissions
         requestPermissions();
@@ -82,11 +103,58 @@ public class MainActivity extends AppCompatActivity implements SensorDelegate, A
         sensor.add(this);
         sensor.add(socialMixingScore);
         ((TextView) findViewById(R.id.device)).setText(SensorArray.deviceDescription);
-        ((TextView) findViewById(R.id.payload)).setText("PAYLOAD : " + ((SensorArray) AppDelegate.getAppDelegate().sensor()).payloadData().shortName());
+        ((TextView) findViewById(R.id.payload)).setText("KEY : " + ((SensorArray) AppDelegate.getAppDelegate().sensor()).payloadData().shortName());
+
+
         targetListAdapter = new TargetListAdapter(this, targets);
         final ListView targetsListView = ((ListView) findViewById(R.id.targets));
         targetsListView.setAdapter(targetListAdapter);
         targetsListView.setOnItemClickListener(this);
+
+
+
+    }
+
+
+    public void scanCode(){
+        IntentIntegrator integrator = new IntentIntegrator(this);
+        integrator.setCaptureActivity(CaptureAct.class);
+        integrator.setOrientationLocked(false);
+        integrator.setDesiredBarcodeFormats(IntentIntegrator.ALL_CODE_TYPES);
+        integrator.setPrompt("Scanning Code");
+        integrator.initiateScan();
+    }
+
+
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        IntentResult result= IntentIntegrator.parseActivityResult(requestCode,resultCode,data);
+        if(result!=null){
+            if(result.getContents()!=null){
+                AlertDialog.Builder builder=new AlertDialog.Builder(this);
+                builder.setMessage(result.getContents());
+                builder.setTitle("Scanning Result");
+                builder.setPositiveButton("Scan Again", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        scanCode();
+                    }
+                }).setNegativeButton("finish", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+
+                    }
+                });
+
+                AlertDialog dialog=builder.create();
+                dialog.show();
+            }else {
+                Toast.makeText(this,"No results",Toast.LENGTH_LONG).show();
+            }
+        }else{
+            super.onActivityResult(requestCode,resultCode,data);
+        }
     }
 
     /// REQUIRED : Request application permissions for sensor operation.
@@ -149,66 +217,66 @@ public class MainActivity extends AppCompatActivity implements SensorDelegate, A
         targetListAdapter.clear();
         targetListAdapter.addAll(targetList);
     }
-
-    // Update social distance score
-    private void updateSocialDistance(TimeInterval unit) {
-        final long millisecondsPerUnit = unit.value * 1000;
-        final List<TextView> labels = new ArrayList<>();
-        labels.add((TextView) findViewById(R.id.socialMixingScore00));
-        labels.add((TextView) findViewById(R.id.socialMixingScore01));
-        labels.add((TextView) findViewById(R.id.socialMixingScore02));
-        labels.add((TextView) findViewById(R.id.socialMixingScore03));
-        labels.add((TextView) findViewById(R.id.socialMixingScore04));
-        labels.add((TextView) findViewById(R.id.socialMixingScore05));
-        labels.add((TextView) findViewById(R.id.socialMixingScore06));
-        labels.add((TextView) findViewById(R.id.socialMixingScore07));
-        labels.add((TextView) findViewById(R.id.socialMixingScore08));
-        labels.add((TextView) findViewById(R.id.socialMixingScore09));
-        labels.add((TextView) findViewById(R.id.socialMixingScore10));
-        labels.add((TextView) findViewById(R.id.socialMixingScore11));
-        final long epoch = (new Date().getTime() / millisecondsPerUnit) - 11;
-        for (int i=0; i<=11; i++) {
-            // Compute score for time slot
-            final Date start = new Date((epoch + i) * millisecondsPerUnit);
-            final Date end = new Date((epoch + i + 1) * millisecondsPerUnit);
-            final double score = socialMixingScore.scoreByProximity(start, end, -25, -70);
-            // Present textual score
-            final String scoreForPresentation = Integer.toString((int) Math.round(score * 100));
-            labels.get(i).setText(scoreForPresentation);
-            // Change color according to score
-            if (score < 0.1) {
-                labels.get(i).setBackgroundColor(ContextCompat.getColor(this, R.color.systemGreen));
-            } else if (score < 0.5) {
-                labels.get(i).setBackgroundColor(ContextCompat.getColor(this, R.color.systemOrange));
-            } else {
-                labels.get(i).setBackgroundColor(ContextCompat.getColor(this, R.color.systemRed));
-            }
-        }
-    }
-
-    public void onClickSocialMixingScoreUnit(View v) {
-        final Map<TextView, TimeInterval> mapping = new HashMap<>(12);
-        mapping.put((TextView) findViewById(R.id.socialMixingScoreUnitH24), new TimeInterval(24 * 60 * 60));
-        mapping.put((TextView) findViewById(R.id.socialMixingScoreUnitH12), new TimeInterval(12 * 60 * 60));
-        mapping.put((TextView) findViewById(R.id.socialMixingScoreUnitH4), new TimeInterval(4 * 60 * 60));
-        mapping.put((TextView) findViewById(R.id.socialMixingScoreUnitH1), new TimeInterval(1 * 60 * 60));
-        mapping.put((TextView) findViewById(R.id.socialMixingScoreUnitM30), new TimeInterval(30 * 60));
-        mapping.put((TextView) findViewById(R.id.socialMixingScoreUnitM15), new TimeInterval(15 * 60));
-        mapping.put((TextView) findViewById(R.id.socialMixingScoreUnitM5), new TimeInterval(5 * 60));
-        mapping.put((TextView) findViewById(R.id.socialMixingScoreUnitM1), new TimeInterval(1 * 60));
-        final int active = ContextCompat.getColor(this, R.color.systemBlue);
-        final int inactive = ContextCompat.getColor(this, R.color.systemGray);
-        final TextView setTo = (TextView) v;
-        for (TextView key : mapping.keySet()) {
-            if (setTo.getId() == key.getId()) {
-                key.setTextColor(active);
-                socialMixingScoreUnit = mapping.get(key);
-            } else {
-                key.setTextColor(inactive);
-            }
-        }
-        updateSocialDistance(socialMixingScoreUnit);
-    }
+//
+//    // Update social distance score
+//    private void updateSocialDistance(TimeInterval unit) {
+//        final long millisecondsPerUnit = unit.value * 1000;
+//        final List<TextView> labels = new ArrayList<>();
+//        labels.add((TextView) findViewById(R.id.socialMixingScore00));
+//        labels.add((TextView) findViewById(R.id.socialMixingScore01));
+//        labels.add((TextView) findViewById(R.id.socialMixingScore02));
+//        labels.add((TextView) findViewById(R.id.socialMixingScore03));
+//        labels.add((TextView) findViewById(R.id.socialMixingScore04));
+//        labels.add((TextView) findViewById(R.id.socialMixingScore05));
+//        labels.add((TextView) findViewById(R.id.socialMixingScore06));
+//        labels.add((TextView) findViewById(R.id.socialMixingScore07));
+//        labels.add((TextView) findViewById(R.id.socialMixingScore08));
+//        labels.add((TextView) findViewById(R.id.socialMixingScore09));
+//        labels.add((TextView) findViewById(R.id.socialMixingScore10));
+//        labels.add((TextView) findViewById(R.id.socialMixingScore11));
+//        final long epoch = (new Date().getTime() / millisecondsPerUnit) - 11;
+//        for (int i=0; i<=11; i++) {
+//            // Compute score for time slot
+//            final Date start = new Date((epoch + i) * millisecondsPerUnit);
+//            final Date end = new Date((epoch + i + 1) * millisecondsPerUnit);
+//            final double score = socialMixingScore.scoreByProximity(start, end, -25, -70);
+//            // Present textual score
+//            final String scoreForPresentation = Integer.toString((int) Math.round(score * 100));
+//            labels.get(i).setText(scoreForPresentation);
+//            // Change color according to score
+//            if (score < 0.1) {
+//                labels.get(i).setBackgroundColor(ContextCompat.getColor(this, R.color.systemGreen));
+//            } else if (score < 0.5) {
+//                labels.get(i).setBackgroundColor(ContextCompat.getColor(this, R.color.systemOrange));
+//            } else {
+//                labels.get(i).setBackgroundColor(ContextCompat.getColor(this, R.color.systemRed));
+//            }
+//        }
+//    }
+//
+//    public void onClickSocialMixingScoreUnit(View v) {
+//        final Map<TextView, TimeInterval> mapping = new HashMap<>(12);
+//        mapping.put((TextView) findViewById(R.id.socialMixingScoreUnitH24), new TimeInterval(24 * 60 * 60));
+//        mapping.put((TextView) findViewById(R.id.socialMixingScoreUnitH12), new TimeInterval(12 * 60 * 60));
+//        mapping.put((TextView) findViewById(R.id.socialMixingScoreUnitH4), new TimeInterval(4 * 60 * 60));
+//        mapping.put((TextView) findViewById(R.id.socialMixingScoreUnitH1), new TimeInterval(1 * 60 * 60));
+//        mapping.put((TextView) findViewById(R.id.socialMixingScoreUnitM30), new TimeInterval(30 * 60));
+//        mapping.put((TextView) findViewById(R.id.socialMixingScoreUnitM15), new TimeInterval(15 * 60));
+//        mapping.put((TextView) findViewById(R.id.socialMixingScoreUnitM5), new TimeInterval(5 * 60));
+//        mapping.put((TextView) findViewById(R.id.socialMixingScoreUnitM1), new TimeInterval(1 * 60));
+//        final int active = ContextCompat.getColor(this, R.color.systemBlue);
+//        final int inactive = ContextCompat.getColor(this, R.color.systemGray);
+//        final TextView setTo = (TextView) v;
+//        for (TextView key : mapping.keySet()) {
+//            if (setTo.getId() == key.getId()) {
+//                key.setTextColor(active);
+//                socialMixingScoreUnit = mapping.get(key);
+//            } else {
+//                key.setTextColor(inactive);
+//            }
+//        }
+//        updateSocialDistance(socialMixingScoreUnit);
+//    }
 
     // MARK:- SensorDelegate
 
@@ -227,93 +295,92 @@ public class MainActivity extends AppCompatActivity implements SensorDelegate, A
 
     @Override
     public void sensor(SensorType sensor, PayloadData didRead, TargetIdentifier fromTarget) {
-        this.didRead++;
-        targetIdentifiers.put(fromTarget, didRead);
-        Target target = payloads.get(didRead);
-        if (target != null) {
-            target.didRead(new Date());
-        } else {
-            payloads.put(didRead, new Target(fromTarget, didRead));
-        }
-        final String text = Long.toString(this.didRead);
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                final TextView textView = findViewById(R.id.didReadCount);
-                textView.setText(text);
-                updateTargets();
-            }
-        });
+//        this.didRead++;
+//        targetIdentifiers.put(fromTarget, didRead);
+//        Target target = payloads.get(didRead);
+//        if (target != null) {
+//            target.didRead(new Date());
+//        } else {
+//            payloads.put(didRead, new Target(fromTarget, didRead));
+//        }
+//        final String text = Long.toString(this.didRead);
+//        runOnUiThread(new Runnable() {
+//            @Override
+//            public void run() {
+//                final TextView textView = findViewById(R.id.didReadCount);
+//                textView.setText(text);
+//                updateTargets();
+//            }
+//        });
     }
 
     @Override
     public void sensor(SensorType sensor, List<PayloadData> didShare, TargetIdentifier fromTarget) {
-        this.didShare++;
-        final Date now = new Date();
-        for (PayloadData didRead : didShare) {
-            targetIdentifiers.put(fromTarget, didRead);
-            Target target = payloads.get(didRead);
-            if (target != null) {
-                target.didRead(new Date());
-            } else {
-                payloads.put(didRead, new Target(fromTarget, didRead));
-            }
-        }
-        final String text = Long.toString(this.didShare);
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                final TextView textView = findViewById(R.id.didShareCount);
-                textView.setText(text);
-                updateTargets();
-            }
-        });
+//        this.didShare++;
+//        final Date now = new Date();
+//        for (PayloadData didRead : didShare) {
+//            targetIdentifiers.put(fromTarget, didRead);
+//            Target target = payloads.get(didRead);
+//            if (target != null) {
+//                target.didRead(new Date());
+//            } else {
+//                payloads.put(didRead, new Target(fromTarget, didRead));
+//            }
+//        }
+//        final String text = Long.toString(this.didShare);
+//        runOnUiThread(new Runnable() {
+//            @Override
+//            public void run() {
+//                final TextView textView = findViewById(R.id.didShareCount);
+//                textView.setText(text);
+//                updateTargets();
+//            }
+//        });
     }
 
     @Override
     public void sensor(SensorType sensor, Proximity didMeasure, TargetIdentifier fromTarget) {
-        this.didMeasure++;
-        final PayloadData didRead = targetIdentifiers.get(fromTarget);
-        if (didRead != null) {
-            final Target target = payloads.get(didRead);
-            if (target != null) {
-                target.targetIdentifier(fromTarget);
-                target.proximity(didMeasure);
-            }
-        }
-        final String text = Long.toString(this.didMeasure);
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                final TextView textView = findViewById(R.id.didMeasureCount);
-                textView.setText(text);
-                updateTargets();
-                updateSocialDistance(socialMixingScoreUnit);
-            }
-        });
+//        this.didMeasure++;
+//        final PayloadData didRead = targetIdentifiers.get(fromTarget);
+//        if (didRead != null) {
+//            final Target target = payloads.get(didRead);
+//            if (target != null) {
+//                target.targetIdentifier(fromTarget);
+//                target.proximity(didMeasure);
+//            }
+//        }
+//        final String text = Long.toString(this.didMeasure);
+//        runOnUiThread(new Runnable() {
+//            @Override
+//            public void run() {
+//                final TextView textView = findViewById(R.id.didMeasureCount);
+//                textView.setText(text);
+//                updateTargets();
+//            }
+//        });
     }
 
     @Override
     public void sensor(SensorType sensor, ImmediateSendData didReceive, TargetIdentifier fromTarget) {
-        this.didReceive++;
-        final PayloadData didRead = new PayloadData(didReceive.data.value);
-        if (didRead != null) {
-            final Target target = payloads.get(didRead);
-            if (target != null) {
-                targetIdentifiers.put(fromTarget, didRead);
-                target.targetIdentifier(fromTarget);
-                target.received(didReceive);
-            }
-        }
-        final String text = Long.toString(this.didReceive);
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                final TextView textView = findViewById(R.id.didReceiveCount);
-                textView.setText(text);
-                updateTargets();
-            }
-        });
+//        this.didReceive++;
+//        final PayloadData didRead = new PayloadData(didReceive.data.value);
+//        if (didRead != null) {
+//            final Target target = payloads.get(didRead);
+//            if (target != null) {
+//                targetIdentifiers.put(fromTarget, didRead);
+//                target.targetIdentifier(fromTarget);
+//                target.received(didReceive);
+//            }
+//        }
+//        final String text = Long.toString(this.didReceive);
+//        runOnUiThread(new Runnable() {
+//            @Override
+//            public void run() {
+//                final TextView textView = findViewById(R.id.didReceiveCount);
+//                textView.setText(text);
+//                updateTargets();
+//            }
+//        });
     }
 
     @Override
