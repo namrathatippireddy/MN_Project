@@ -193,3 +193,4 @@ Ferretti, L., Wymant, C., Kendall, M., Zhao, L., Nurtay, A., Abeler-Dörner, L.,
 
 Statcounter 2020, *Mobile Operating System Market Share*, Statcounter Global Stats, viewed August 2020, <https://gs.statcounter.com/os-market-share/mobile/worldwide>
 "# MNProject" 
+"# MNProject" 
