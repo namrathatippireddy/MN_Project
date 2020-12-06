@@ -43,6 +43,7 @@ import com.vmware.herald.sensor.datatype.TimeInterval;
 
 import org.w3c.dom.Text;
 
+import java.security.NoSuchAlgorithmException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -53,6 +54,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.security.MessageDigest;
+import java.util.UUID;
+import android.os.Handler;
 
 import static android.content.pm.PackageManager.PERMISSION_GRANTED;
 
@@ -77,6 +81,9 @@ public class MainActivity extends AppCompatActivity implements SensorDelegate, A
     private TimeInterval socialMixingScoreUnit = new TimeInterval(60);
 
     LinearLayout scanQRButton;
+    private int idGenInterval = 3600000; // 1 hr by default, can be changed later
+    private Handler idGenHandler;
+    private Runnable runnable;
 
 
     @Override
@@ -103,16 +110,35 @@ public class MainActivity extends AppCompatActivity implements SensorDelegate, A
         sensor.add(this);
         sensor.add(socialMixingScore);
         ((TextView) findViewById(R.id.device)).setText(SensorArray.deviceDescription);
-        ((TextView) findViewById(R.id.payload)).setText("KEY : " + ((SensorArray) AppDelegate.getAppDelegate().sensor()).payloadData().shortName());
+        //((TextView) findViewById(R.id.payload)).setText("KEY : " + ((SensorArray) AppDelegate.getAppDelegate().sensor()).payloadData().shortName());
+        // Init
+        idGenHandler = new Handler();
+        runnable = new Runnable() {
+            @Override
+            public void run() {
+                String uniqueID = UUID.randomUUID().toString();
+                MessageDigest md = null;
+                try {
+                    md = MessageDigest.getInstance("SHA-256");
+                } catch (NoSuchAlgorithmException e) {
+                    e.printStackTrace();
+                }
 
+                byte[] hash = md.digest(new StringBuilder().append(uniqueID).append(dateFormatter.toString()).toString().getBytes());
+                String hashVal = hash.toString();
+                //System.out.println(hashVal.substring(0, 5));
+                ((TextView) findViewById(R.id.payload)).setText("Unique ID : " +hashVal.substring(0, 10));
+                idGenHandler.postDelayed(this, idGenInterval);
+            }
+        };
+
+//Start
+        idGenHandler.postDelayed(runnable, 0);
 
         targetListAdapter = new TargetListAdapter(this, targets);
         final ListView targetsListView = ((ListView) findViewById(R.id.targets));
         targetsListView.setAdapter(targetListAdapter);
         targetsListView.setOnItemClickListener(this);
-
-
-
     }
 
 
