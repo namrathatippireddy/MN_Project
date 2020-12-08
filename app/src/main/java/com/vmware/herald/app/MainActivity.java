@@ -16,6 +16,7 @@ import android.view.View;
 import android.widget.AdapterView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -26,6 +27,12 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
+import com.android.volley.Request;
+import com.android.volley.RequestQueue;
+import com.android.volley.Response;
+import com.android.volley.VolleyError;
+import com.android.volley.toolbox.StringRequest;
+import com.android.volley.toolbox.Volley;
 import com.google.zxing.integration.android.IntentIntegrator;
 import com.google.zxing.integration.android.IntentResult;
 import com.vmware.herald.sensor.Sensor;
@@ -85,6 +92,44 @@ public class MainActivity extends AppCompatActivity implements SensorDelegate, A
     private Handler idGenHandler;
     private Runnable runnable;
 
+    RelativeLayout checkStatusButton;
+
+
+    String keys_of_infected_person="cOaYxhvI1iqBFP8tEsltY2X0v9Ku9pMK," +
+            "cB08VwqLkPcxEgzcMk9pF3CQPoItnUhC," +
+            "Xsuy47bDKkW4WZJ3z29WkfWY2vuYlrH2," +
+            "EPIWTs227UcymMvVRvqUwNVpICi9agUL," +
+            "uJDAJXDCxPHzk7uXpXxMyeQ8G4AqvZj8," +
+            "0tzFwaJy4Mby0y7gRNPmbDpo8N4komXU," +
+            "0kzhk4UKH3JMWtLfSX6ZJY8xUlfoq8z6," +
+            "u88AY2sq943gD215y32auhRnclidQyAt," +
+            "Izvq3SqemMvIrZGJzaegVjMneajGHUAZ," +
+            "GvXgFuifZ8RKgYg5wyvR8S9ptabFXh1s";
+
+    String keys_of_met_infected_person="0tzFwaJy4Mby0y7gRNPmbDpo8N4komXU," +
+            "0kzhk4UKH3JMWtLfSX6ZJY8xUlfoq8z6," +
+            "u88AY2sq943gD215y32auhRnclidQyAt," +
+            "dYZRm6JC9UVJ7oRITpnNIwi0IcMKqetk," +
+            "68ujjMGUrvfSyvkdbPDkx6feNrsvuzJc," +
+            "zfxLQqcPoiNXUbaEkrpc2EtmdNCt3j34," +
+            "SaEzbeghqdP8cfRdYTUyprJea3dYX6cM," +
+            "tOAmysXXE0K1QTwYDrDJahVGYEKpN8ZP," +
+            "kTZyBcvgRj0cJfaFMYJrL1zXpNSXOc4T," +
+            "ZZHiBTzmMVKzagDKWnquBWAsefo1vdAo";
+
+    String keys_of_not_met_infected_person="LCDzhztUw4QzUGcJ2chwIssbsahlfGeA," +
+            "6afiXPfkKrcuqHSKDlztga9v9kKWOCyg," +
+            "u6tuTZ1qjZzMxXBR2QThlmv9HzIZDAwn," +
+            "rcY15qPVfPI96MbD80Y9tL2XKifqXExC," +
+            "1iY3uwhFj9fOaPhErjkCk8Apwr9jM3iA," +
+            "Gfv73AInTy29fcNWXhaWGbzhM6ex86Bq," +
+            "Mc25yYmdef5PoRV1YAzTuiV4vUYgTg6w," +
+            "q2uas7qBxsWKvbPvNj6HEDCFtut3cJTK," +
+            "TLQrmDN0mOowQVa6SQULsCxgDzaHtbDB," +
+            "gjUwWhPRp1iN4sKasYzx3v8lxvaypY21";
+
+
+    String myKeys=keys_of_not_met_infected_person;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -99,6 +144,15 @@ public class MainActivity extends AppCompatActivity implements SensorDelegate, A
             @Override
             public void onClick(View view) {
                 scanCode();
+            }
+        });
+
+        checkStatusButton=(RelativeLayout)findViewById(R.id.checkStatus);
+
+        checkStatusButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                checkStatus();
             }
         });
 
@@ -118,6 +172,7 @@ public class MainActivity extends AppCompatActivity implements SensorDelegate, A
             public void run() {
                 String uniqueID = UUID.randomUUID().toString();
                 MessageDigest md = null;
+
                 try {
                     md = MessageDigest.getInstance("SHA-256");
                 } catch (NoSuchAlgorithmException e) {
@@ -128,9 +183,34 @@ public class MainActivity extends AppCompatActivity implements SensorDelegate, A
                 String hashVal = hash.toString();
                 //System.out.println(hashVal.substring(0, 5));
                 ((TextView) findViewById(R.id.payload)).setText("Unique ID : " +hashVal.substring(0, 10));
-                idGenHandler.postDelayed(this, idGenInterval);
             }
         };
+
+
+//
+//        // Instantiate the RequestQueue.
+//        RequestQueue queue = Volley.newRequestQueue(this);
+//        String url ="https://www.google.com";
+//
+//// Request a string response from the provided URL.
+//        StringRequest stringRequest = new StringRequest(Request.Method.GET, url,
+//                new Response.Listener<String>() {
+//                    @Override
+//                    public void onResponse(String response) {
+//                        // Display the first 500 characters of the response string.
+//                        Toast.makeText(getApplicationContext(),response.substring(0,500),Toast.LENGTH_LONG).show();
+//                    }
+//                }, new Response.ErrorListener() {
+//            @Override
+//            public void onErrorResponse(VolleyError error) {
+//                Toast.makeText(getApplicationContext(),"That did not work",Toast.LENGTH_LONG).show();
+//            }
+//        });
+//
+//// Add the request to the RequestQueue.
+//        queue.add(stringRequest);
+
+
 
 //Start
         idGenHandler.postDelayed(runnable, 0);
@@ -151,6 +231,149 @@ public class MainActivity extends AppCompatActivity implements SensorDelegate, A
         integrator.initiateScan();
     }
 
+    public void checkStatus(){
+
+
+        // Instantiate the RequestQueue.
+        RequestQueue queue = Volley.newRequestQueue(this);
+
+        String base="https://adiltesting.000webhostapp.com/MN/checkRisk.php?infectedkeys=";
+
+        String url =base+myKeys;
+
+// Request a string response from the provided URL.
+        StringRequest stringRequest = new StringRequest(Request.Method.GET, url,
+                new Response.Listener<String>() {
+                    @Override
+                    public void onResponse(String response) {
+                        // Display the first 500 characters of the response string.
+                        Toast.makeText(getApplicationContext(),response,Toast.LENGTH_LONG).show();
+
+                        if(response.trim().equals("atrisk")){
+                            dialogCreate("Status Result","You are at risk!",false);
+                        }else{
+                            dialogCreate("Status Result","You are not at risk!",false);
+
+                        }
+
+                    }
+                }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                Toast.makeText(getApplicationContext(),"That did not work",Toast.LENGTH_LONG).show();
+            }
+        });
+
+// Add the request to the RequestQueue.
+        queue.add(stringRequest);
+
+    }
+
+    public void verifyQRCode(String qrCode){
+
+        // Instantiate the RequestQueue.
+        RequestQueue queue = Volley.newRequestQueue(this);
+
+        String base="https://adiltesting.000webhostapp.com/MN/QRVerify.php?qrcode=";
+
+        String url =base+qrCode;
+
+        // Request a string response from the provided URL.
+        StringRequest stringRequest = new StringRequest(Request.Method.GET, url,
+                new Response.Listener<String>() {
+                    @Override
+                    public void onResponse(String response) {
+                        // Display the first 500 characters of the response string.
+                        Toast.makeText(getApplicationContext(),response,Toast.LENGTH_LONG).show();
+
+                        if(response.trim().equals("valid")){
+                                    reportCovid();
+                        }else {
+                            Toast.makeText(getApplicationContext(),
+                                    "There seems to Be a problem with the Backend!",
+                                    Toast.LENGTH_LONG).show();
+                        }
+
+                    }
+                }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                Toast.makeText(getApplicationContext(),"That did not work",Toast.LENGTH_LONG).show();
+            }
+        });
+
+        // Add the request to the RequestQueue.
+        queue.add(stringRequest);
+
+    }
+
+    public void reportCovid(){
+
+        // Instantiate the RequestQueue.
+        RequestQueue queue = Volley.newRequestQueue(this);
+
+        String base="https://adiltesting.000webhostapp.com/MN/reportCovid.php?infectedkeys=";
+
+        String url =base+myKeys;
+
+        // Request a string response from the provided URL.
+        StringRequest stringRequest = new StringRequest(Request.Method.GET, url,
+                new Response.Listener<String>() {
+                    @Override
+                    public void onResponse(String response) {
+                        // Display the first 500 characters of the response string.
+                        Toast.makeText(getApplicationContext(),response,Toast.LENGTH_LONG).show();
+
+                        if(response.trim().equals("success")){
+                            dialogCreate("COVID REPORTED","Thank you for reporting!",true);
+                        }else{
+                            dialogCreate("COVID NOT REPORTED","Sorry There seems to be some Problem with your QR code",true);
+                        }
+
+
+                    }
+                }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                Toast.makeText(getApplicationContext(),"That did not work",Toast.LENGTH_LONG).show();
+            }
+        });
+
+// Add the request to the RequestQueue.
+        queue.add(stringRequest);
+
+    }
+
+    public void dialogCreate(String title, String body, final Boolean isScanAgain){
+        AlertDialog.Builder builder=new AlertDialog.Builder(this);
+        builder.setMessage(body);
+        builder.setTitle(title);
+        builder.setPositiveButton("Try Again", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialogInterface, int i) {
+
+                if(isScanAgain){
+                    scanCode();
+                }else{
+                    checkStatus();
+                }
+
+            }
+        }).setNegativeButton("finish", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialogInterface, int i) {
+
+            }
+        });
+
+
+        AlertDialog dialog=builder.create();
+        dialog.show();
+
+    }
+
+
+
 
 
     @Override
@@ -158,26 +381,15 @@ public class MainActivity extends AppCompatActivity implements SensorDelegate, A
         IntentResult result= IntentIntegrator.parseActivityResult(requestCode,resultCode,data);
         if(result!=null){
             if(result.getContents()!=null){
-                AlertDialog.Builder builder=new AlertDialog.Builder(this);
-                builder.setMessage(result.getContents());
-                builder.setTitle("Scanning Result");
-                builder.setPositiveButton("Scan Again", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialogInterface, int i) {
-                        scanCode();
-                    }
-                }).setNegativeButton("finish", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialogInterface, int i) {
 
-                    }
-                });
+                verifyQRCode(result.getContents());
 
-                AlertDialog dialog=builder.create();
-                dialog.show();
             }else {
                 Toast.makeText(this,"No results",Toast.LENGTH_LONG).show();
             }
+
+
+
         }else{
             super.onActivityResult(requestCode,resultCode,data);
         }
