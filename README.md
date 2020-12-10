@@ -1,4 +1,3 @@
-<br>
 Mobile Networking Project - Team Tech Gators 
 <br>
 The backend code can be found using the following link: https://github.com/Sugooi/BackendForMN
